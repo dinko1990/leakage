@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#08111f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Leak Tracker" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <title>Leak Drop Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">SEWAGE PIT DIAGNOSTICS</p>
+      <h1>Leak Drop Tracker</h1>
+    </div>
+    <button id="helpBtn" class="icon-btn" aria-label="Instructions">?</button>
+  </header>
+
+  <main>
+    <section class="card camera-card">
+      <div class="camera-stage" id="cameraStage">
+        <video id="camera" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="cameraPlaceholder" class="camera-placeholder">
+          <div class="drop-symbol">◉</div>
+          <strong>Point the rear camera at the puddle</strong>
+          <span>Keep the iPhone completely still and fill the frame with the granite and water.</span>
+        </div>
+        <div id="roiHint" class="roi-hint hidden">Drag over the water surface to choose the detection zone</div>
+        <div class="camera-badges">
+          <span id="cameraBadge" class="badge">Camera off</span>
+          <span id="detectBadge" class="badge">Detection off</span>
+        </div>
+      </div>
+
+      <div class="button-grid two">
+        <button id="cameraBtn" class="primary">Start camera</button>
+        <button id="roiBtn" class="secondary" disabled>Select water area</button>
+      </div>
+
+      <div class="meter-block">
+        <div class="meter-head">
+          <span>Ripple motion</span>
+          <strong id="motionValue">0.0</strong>
+        </div>
+        <div class="meter"><div id="motionFill"></div><i id="thresholdMarker"></i></div>
+      </div>
+
+      <div class="control-row">
+        <label for="sensitivity">Sensitivity <output id="sensitivityValue">6</output></label>
+        <input id="sensitivity" type="range" min="2" max="12" value="6" step="0.5" />
+      </div>
+
+      <div class="button-grid two">
+        <button id="calibrateBtn" class="secondary" disabled>Calibrate still water</button>
+        <button id="detectBtn" class="accent" disabled>Start detecting</button>
+      </div>
+      <p id="statusText" class="status-text">Camera processing happens only on this device. No image is uploaded.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">CONTROLLED TEST</p>
+          <h2>What is running?</h2>
+        </div>
+        <span id="elapsedClock" class="clock">00:00:00</span>
+      </div>
+
+      <div class="state-grid">
+        <button class="state-btn" data-state="pump1"><span>Pump 1</span><b>OFF</b></button>
+        <button class="state-btn" data-state="pump2"><span>Pump 2</span><b>OFF</b></button>
+        <button class="state-btn" data-state="inlet"><span>Inlet water</span><b>OFF</b></button>
+      </div>
+
+      <label class="field-label" for="testLabel">Test label</label>
+      <input id="testLabel" class="text-input" placeholder="e.g. All pumps off / pump 1 only" autocomplete="off" />
+
+      <div class="button-grid two">
+        <button id="sessionBtn" class="primary">Start session</button>
+        <button id="manualDropBtn" class="drop-btn" disabled>Log drop now</button>
+      </div>
+    </section>
+
+    <section class="stats-grid" aria-label="Drop statistics">
+      <article><span>Drops</span><strong id="statCount">0</strong></article>
+      <article><span>Latest gap</span><strong id="statLatest">—</strong></article>
+      <article><span>Average</span><strong id="statAverage">—</strong></article>
+      <article><span>Range</span><strong id="statRange">—</strong></article>
+    </section>
+
+    <section class="card">
+      <div class="section-title compact">
+        <div>
+          <p class="eyebrow">COMPARISON</p>
+          <h2>Intervals by test state</h2>
+        </div>
+      </div>
+      <div id="comparison" class="comparison">
+        <p class="empty-copy">Keep the same pump state for at least two drops to compare it with other tests.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title compact">
+        <div>
+          <p class="eyebrow">PATTERN</p>
+          <h2>Time between drops</h2>
+        </div>
+      </div>
+      <canvas id="intervalChart" class="chart" aria-label="Chart of intervals between detected drops"></canvas>
+      <p id="chartEmpty" class="empty-copy">The interval chart appears after the second drop.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-title compact">
+        <div>
+          <p class="eyebrow">TIMELINE</p>
+          <h2>Events</h2>
+        </div>
+        <button id="clearBtn" class="text-btn">Clear</button>
+      </div>
+      <div id="timeline" class="timeline">
+        <p class="empty-copy">Start a session, then change pump states and log or detect drops.</p>
+      </div>
+    </section>
+
+    <section class="card export-card">
+      <div class="section-title compact">
+        <div>
+          <p class="eyebrow">EVIDENCE</p>
+          <h2>Save this test</h2>
+        </div>
+      </div>
+      <div class="button-grid two">
+        <button id="csvBtn" class="secondary" disabled>Export CSV</button>
+        <button id="shareBtn" class="secondary" disabled>Share report</button>
+      </div>
+      <button id="jsonBtn" class="text-btn full" disabled>Export full JSON backup</button>
+    </section>
+  </main>
+
+  <dialog id="helpDialog">
+    <form method="dialog">
+      <div class="dialog-head">
+        <h2>How to isolate the leak</h2>
+        <button class="icon-btn" value="cancel" aria-label="Close">×</button>
+      </div>
+      <ol>
+        <li><strong>Make the phone rigid.</strong> Use a tripod, clamp, or heavy support. Camera movement will look like ripples.</li>
+        <li><strong>Light the puddle from the side.</strong> Reflections make ripple rings easier to detect. Avoid flickering lamps.</li>
+        <li><strong>Select only still water.</strong> Exclude pump vibration, hoses, shadows, and flowing edges.</li>
+        <li><strong>Calibrate for 5 seconds</strong> while nothing changes. Then start detection.</li>
+        <li><strong>Run one state at a time:</strong> all pumps off, Pump 1 only, Pump 2 only, inlet water only, and combinations.</li>
+        <li><strong>Compare intervals.</strong> A large change immediately after a state change points toward that machine, pipe, joint, or pressure condition.</li>
+      </ol>
+      <p class="warning"><strong>Safety:</strong> do not enter or lean into a sewage pit. Toxic gases, pathogens, electrical equipment, and confined-space hazards can be fatal. Keep the phone and yourself outside the pit.</p>
+      <button class="primary full" value="default">Understood</button>
+    </form>
+  </dialog>
+
+  <canvas id="analysisCanvas" hidden></canvas>
+  <script src="app.js"></script>
+</body>
+</html>
